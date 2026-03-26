@@ -3,7 +3,7 @@ const CACHE_NAME = "cycle-app";
 self.addEventListener("install", e => {
   e.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(["index.html"]);
+      return cache.addAll(["preview (13).html"]);
     })
   );
 });
