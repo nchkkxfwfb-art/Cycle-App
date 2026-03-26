@@ -1,7 +1,7 @@
 {
   "name": "Cycle App",
   "short_name": "Cycle",
-  "start_url": "preview (13).html",
+  "start_url": "index.html",
   "display": "standalone",
   "background_color": "#fff5f8",
   "theme_color": "#ffb6c1",
