@@ -2,145 +2,107 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="apple-mobile-web-app-capable" content="yes">
 
 <title>Cycle</title>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-* { box-sizing: border-box; }
+*{box-sizing:border-box}
 
-@font-face {
-  font-family: 'Congenial';
-  src: local('Congenial UltraLight');
-}
-
-body {
-  font-family: 'Congenial', -apple-system;
-  background: linear-gradient(180deg, #fff1f6, #ffe4ec);
+body{
   margin:0;
+  font-family:-apple-system;
+  background:linear-gradient(180deg,#fff1f6,#ffe4ec);
 }
 
-.container {
+/* PAGES */
+.page{display:none;padding:18px;padding-bottom:90px;}
+.page.active{display:block}
+
+/* CARD */
+.card{
+  background:white;
+  border-radius:20px;
   padding:16px;
-  max-width:500px;
-  margin:0 auto;
+  margin-bottom:16px;
 }
 
-.card {
-  background: rgba(255,255,255,0.7);
-  backdrop-filter: blur(12px);
-  border-radius:24px;
-  padding:20px;
-  margin-bottom:18px;
-  box-shadow:0 8px 24px rgba(255, 105, 135, 0.1);
-}
-
-h2,h3 { margin:0 0 12px 0; font-weight:300; }
-
-/* INPUTS */
-input, select {
+/* INPUT */
+input,select,button{
   width:100%;
   padding:14px;
-  margin:8px 0;
-  border-radius:16px;
+  margin:6px 0;
+  border-radius:14px;
   border:none;
-  background:#fff;
 }
 
 /* BUTTON */
-button {
-  width:100%;
-  padding:14px;
-  border-radius:16px;
-  border:none;
-}
-
-/* SAVE BUTTON */
-.primary {
-  background: linear-gradient(135deg, #ff8fb1, #ff6b9a);
-  color:white;
-  box-shadow: 0 6px 16px rgba(255,105,135,0.3);
-  margin-top:10px;
-  margin-bottom:18px;
-}
-
-/* TOGGLES */
-.toggle-row {
-  display:flex;
-  gap:10px;
-  margin-bottom:14px;
-}
-
-.toggle-row button {
-  flex:1;
-  background:#ffe4ec;
-  font-size:18px;
-  padding:12px;
-}
-
-.toggle-row button.active {
-  background: linear-gradient(135deg,#ffb6c1,#ff8fb1);
+.primary{
+  background:#ff6b9a;
   color:white;
 }
 
-/* STATUS */
-#result {
-  margin-top:12px;
-  font-size:20px;
+/* ROW */
+.row{display:flex;gap:8px}
+.row button{flex:1}
+
+/* BADGE */
+.badge{
+  padding:10px 16px;
+  border-radius:999px;
 }
 
-.safe { color:#3cb371; }
-.warn { color:#ff4d6d; }
+.safe{background:#d4f8e8}
+.warn{background:#ffd6dc}
+.mid{background:#fff3cd}
 
-/* ENTRIES */
-.entry {
-  padding:14px 0;
-  border-bottom:1px solid rgba(0,0,0,0.05);
-}
-
-.entry-top {
+/* NAV */
+.nav{
+  position:fixed;
+  bottom:0;
+  left:0;
+  right:0;
   display:flex;
-  justify-content:space-between;
-  align-items:center;
+  background:white;
+  border-top:1px solid #eee;
 }
+.nav button{flex:1}
 
-.actions {
-  display:flex;
+/* CALENDAR */
+.calendar{
+  display:grid;
+  grid-template-columns:repeat(7,1fr);
   gap:6px;
 }
 
-.actions button {
-  width:auto;
-  padding:6px 10px;
-  font-size:14px;
-  background:#ffe4ec;
+.day{
+  padding:10px;
+  border-radius:10px;
+  text-align:center;
 }
 
-/* STATS */
-.stat {
-  font-size:14px;
-  margin-bottom:6px;
-}
+.fertile{background:#ffd6dc}
+.safeDay{background:#d4f8e8}
+.midDay{background:#fff3cd}
 
-/* CHART */
-canvas {
-  display:block;
-  width:100%!important;
-}
+canvas{width:100%!important}
 </style>
 </head>
 
 <body>
 
-<div class="container">
+<!-- HOME -->
+<div class="page active" id="home">
 
 <div class="card">
-<h2>🌸 Cycle</h2>
+<h2 id="cycleDay"></h2>
+<div id="status"></div>
+<p id="explain"></p>
+</div>
 
+<div class="card">
 <input type="date" id="date">
 <input type="number" id="temp" placeholder="Temperatur">
 
@@ -150,134 +112,95 @@ canvas {
 <option value="2">spinnbar</option>
 </select>
 
-<div class="toggle-row">
-<button id="peakBtn">⭐</button>
-<button id="periodBtn">🩸</button>
-<button id="disturbedBtn">⚠️</button>
+<div class="row">
+<button onclick="toggle('peak')">⭐</button>
+<button onclick="toggle('period')">🩸</button>
+<button onclick="toggle('dist')">⚠️</button>
 </div>
 
-<button class="primary" id="saveBtn">Speichern</button>
+<button class="primary" onclick="saveEntry()">Speichern</button>
+</div>
 
-<h2 id="result">–</h2>
-<div id="warning" class="warn"></div>
+</div>
+
+<!-- ANALYSE -->
+<div class="page" id="analysis">
+<div class="card">
+<h3>Analyse</h3>
+<div id="insights"></div>
 </div>
 
 <div class="card">
-<h3>📊 Analyse</h3>
-<div id="stats"></div>
-</div>
-
-<div class="card">
-<h3>📈 Kurve</h3>
 <canvas id="chart"></canvas>
 </div>
-
-<div class="card">
-<h3>📅 Verlauf</h3>
-<div id="list"></div>
 </div>
 
+<!-- CALENDAR -->
+<div class="page" id="calendar">
+<div class="card">
+<h3>Monat</h3>
+<div id="calendarGrid" class="calendar"></div>
+</div>
+</div>
+
+<!-- NAV -->
+<div class="nav">
+<button onclick="showPage('home')">🏠</button>
+<button onclick="showPage('analysis')">📈</button>
+<button onclick="showPage('calendar')">📅</button>
 </div>
 
 <script>
 
 // STATE
 let data = JSON.parse(localStorage.getItem("cycleData")) || [];
-let editIndex = null;
-
 let peak=false, period=false, disturbed=false;
 let chart=null;
 
-// ELEMENTE
-const dateInput = document.getElementById("date");
-const tempInput = document.getElementById("temp");
-const mucusSelect = document.getElementById("mucus");
-
-const peakBtn = document.getElementById("peakBtn");
-const periodBtn = document.getElementById("periodBtn");
-const disturbedBtn = document.getElementById("disturbedBtn");
-
-const saveBtn = document.getElementById("saveBtn");
-const resultEl = document.getElementById("result");
-const warningEl = document.getElementById("warning");
-const listEl = document.getElementById("list");
-const chartCanvas = document.getElementById("chart");
-const statsEl = document.getElementById("stats");
-
-// TOGGLES
-peakBtn.onclick = () => { peak=!peak; peakBtn.classList.toggle("active"); };
-periodBtn.onclick = () => { period=!period; periodBtn.classList.toggle("active"); };
-disturbedBtn.onclick = () => { disturbed=!disturbed; disturbedBtn.classList.toggle("active"); };
-
-// SAVE
-function save(){
-  localStorage.setItem("cycleData", JSON.stringify(data));
+// NAV
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
 }
 
-// ADD / EDIT
-saveBtn.onclick = () => {
+// TOGGLE
+function toggle(t){
+  if(t==="peak") peak=!peak;
+  if(t==="period") period=!period;
+  if(t==="dist") disturbed=!disturbed;
+}
 
-  let date = dateInput.value;
-  let temp = parseFloat(tempInput.value);
-  let mucus = parseInt(mucusSelect.value);
+// SAVE
+function saveEntry(){
+
+  let date=document.getElementById("date").value;
+  let temp=parseFloat(document.getElementById("temp").value);
+  let mucus=parseInt(document.getElementById("mucus").value);
 
   if(!date || isNaN(temp)){
     alert("Datum + Temperatur!");
     return;
   }
 
-  let entry = {date,temp,mucus,peak,period,disturbed};
-
-  if(editIndex !== null){
-    data[editIndex] = entry;
-    editIndex = null;
-  } else {
-    data.push(entry);
-  }
-
+  data.push({date,temp,mucus,peak,period,disturbed});
   data.sort((a,b)=> new Date(a.date)-new Date(b.date));
 
-  save();
-  resetInputs();
-  render();
-};
+  localStorage.setItem("cycleData",JSON.stringify(data));
 
-// RESET
-function resetInputs(){
-  dateInput.value="";
-  tempInput.value="";
-  mucusSelect.value="0";
   peak=false; period=false; disturbed=false;
-  peakBtn.classList.remove("active");
-  periodBtn.classList.remove("active");
-  disturbedBtn.classList.remove("active");
+
+  render();
 }
 
-// DELETE / EDIT
-function deleteEntry(i){ data.splice(i,1); save(); render(); }
-
-function editEntry(i){
-  let d = data[i];
-  dateInput.value = d.date;
-  tempInput.value = d.temp;
-  mucusSelect.value = d.mucus;
-  peak=d.peak; period=d.period; disturbed=d.disturbed;
-  peakBtn.classList.toggle("active", peak);
-  periodBtn.classList.toggle("active", period);
-  disturbedBtn.classList.toggle("active", disturbed);
-  editIndex = i;
-}
-
-// ZYKLEN
+// FIXED CYCLE LOGIC
 function splitCycles(){
   let cycles = [];
   let current = [];
 
-  for(let i = 0; i < data.length; i++){
+  for(let i=0;i<data.length;i++){
     let d = data[i];
     let prev = data[i-1];
 
-    // neuer Zyklus NUR wenn vorher KEINE Periode war
     if(d.period && (!prev || !prev.period)){
       if(current.length){
         cycles.push(current);
@@ -293,145 +216,101 @@ function splitCycles(){
   return cycles;
 }
 
-// LOGIK
-function validTemps(cycle){
-  return cycle.map(d=>d.disturbed?null:d.temp);
-}
-
-function coverline(cycle,i){
-  let vals=validTemps(cycle).slice(i-6,i).filter(v=>v!==null);
-  if(vals.length<6)return null;
-  return Math.max(...vals);
-}
-
-function tempRule(cycle){
-  let temps=validTemps(cycle);
-
-  for(let i=6;i<temps.length-2;i++){
-    let c=coverline(cycle,i);
-    if(!c)continue;
-
-    let t1=temps[i],t2=temps[i+1],t3=temps[i+2],t4=temps[i+3];
-
-    if(t1>c&&t2>c&&t3>c)return {index:i+2,cover:c};
-    if(t1>c&&t2>c&&t3<=c&&t4>c)return {index:i+3,cover:c};
-  }
-  return null;
-}
-
-function mucusRule(cycle){
-  let peakIndex=cycle.map(d=>d.peak).lastIndexOf(true);
-  if(peakIndex===-1)return null;
-  return peakIndex+3;
-}
-
-// ANALYSE
-function cycleLength(cycle){ return cycle.length; }
-
-function avgCycleLength(){
+function getCycle(){
   let cycles = splitCycles();
-  if(cycles.length<2)return "-";
-  let lengths = cycles.slice(0,-1).map(c=>c.length);
-  return Math.round(lengths.reduce((a,b)=>a+b,0)/lengths.length);
+  return cycles[cycles.length-1] || [];
 }
 
-function highPhaseLength(cycle){
-  let t=tempRule(cycle);
-  if(!t)return "-";
-  return cycle.length - t.index;
+// STATUS
+function getStatus(day){
+  if(day<7) return "fertile";
+  if(day<14) return "mid";
+  return "safe";
 }
 
-function peakDay(cycle){
-  let i=cycle.map(d=>d.peak).lastIndexOf(true);
-  return i===-1 ? "-" : i+1;
-}
+// HOME
+function renderHome(){
+  let c=getCycle();
 
-function warnings(cycle){
-  let w=[];
-  if(cycle.length<7) w.push("zu wenig Daten");
-  if(!tempRule(cycle)) w.push("kein Anstieg");
-  if(mucusRule(cycle)===null) w.push("kein Peak");
-  if(cycle.filter(d=>d.disturbed).length>3) w.push("viele Störungen");
-  return w.join(" | ");
-}
+  document.getElementById("cycleDay").innerText="Tag "+c.length;
 
-function isSafe(cycle){
-  let t=tempRule(cycle);
-  let m=mucusRule(cycle);
-  if(!t||m===null)return false;
-  return cycle.length-1>=Math.max(t.index,m);
+  let s=getStatus(c.length);
+
+  let map={
+    fertile:["FRUCHTBAR","warn","Fruchtbare Phase"],
+    mid:["UNSICHER","mid","Übergangsphase"],
+    safe:["UNFRUCHTBAR","safe","Nach Hochlage"]
+  };
+
+  let m=map[s];
+
+  document.getElementById("status").innerHTML=
+    `<span class="badge ${m[1]}">${m[0]}</span>`;
+
+  document.getElementById("explain").innerText=m[2];
 }
 
 // CHART
-function drawChart(cycle){
+function renderChart(){
+  let c=getCycle();
 
-  let ctx = chartCanvas.getContext("2d");
-
-  let temps = cycle.map(d=>d.temp);
-  let labels = cycle.map(d=>d.date);
-
-  let high=tempRule(cycle);
-
-  let highPhase = temps.map((v,i)=>{
-    if(high && i>=high.index) return v;
-    return null;
-  });
+  let temps=c.map(d=>d.disturbed?null:d.temp);
+  let labels=c.map(d=>d.date);
 
   if(chart) chart.destroy();
 
-  chart=new Chart(ctx,{
+  chart=new Chart(document.getElementById("chart"),{
     type:'line',
     data:{
       labels,
       datasets:[
-        {data:temps, tension:0.3},
-        {data:highPhase, borderColor:"#ff6b9a"}
+        {
+          label:"Temp",
+          data:temps,
+          tension:0.3
+        }
       ]
     }
   });
 }
 
-// RENDER
-function render(){
+// CALENDAR
+function renderCalendar(){
 
-  let cycle=getCurrentCycle();
+  let grid=document.getElementById("calendarGrid");
+  grid.innerHTML="";
 
-  drawChart(cycle);
+  let now=new Date();
+  let days=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
 
-  statsEl.innerHTML = `
-    <div class="stat">Zyklus: ${cycleLength(cycle)} Tage</div>
-    <div class="stat">Ø Zyklus: ${avgCycleLength()}</div>
-    <div class="stat">Hochlage: ${highPhaseLength(cycle)} Tage</div>
-    <div class="stat">Peak: Tag ${peakDay(cycle)}</div>
-  `;
+  for(let i=1;i<=days;i++){
 
-  warningEl.innerText = warnings(cycle);
+    let s=getStatus(i);
 
-  listEl.innerHTML="";
-  data.forEach((d,i)=>{
-    listEl.innerHTML+=`
-      <div class="entry">
-        <div class="entry-top">
-          <div>${d.date} | ${d.temp}°C</div>
-          <div class="actions">
-            <button onclick="editEntry(${i})">✏️</button>
-            <button onclick="deleteEntry(${i})">❌</button>
-          </div>
-        </div>
-        <div>
-          ${["trocken","cremig","spinnbar"][d.mucus]}
-          ${d.peak?"⭐":""}
-          ${d.period?"🩸":""}
-        </div>
-      </div>
-    `;
-  });
+    let cls = s==="fertile" ? "fertile"
+             : s==="mid" ? "midDay"
+             : "safeDay";
 
-  resultEl.innerHTML = isSafe(cycle)
-    ? "<span class='safe'>🟢 SAFE</span>"
-    : "🔴 WARTEN";
+    grid.innerHTML += `<div class="day ${cls}">${i}</div>`;
+  }
 }
 
+// INSIGHTS
+function renderInsights(){
+  let c=getCycle();
+  document.getElementById("insights").innerHTML=
+    `Zyklus: ${c.length} Tage<br>Einträge: ${data.length}`;
+}
+
+// RENDER
+function render(){
+  renderHome();
+  renderChart();
+  renderCalendar();
+  renderInsights();
+}
+
+// INIT
 render();
 
 </script>
