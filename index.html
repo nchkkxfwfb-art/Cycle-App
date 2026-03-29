@@ -17,92 +17,109 @@ body{
   background:linear-gradient(180deg,#fff1f6,#ffe4ec);
 }
 
-/* PAGES */
-.page{display:none;padding:18px;padding-bottom:90px;}
-.page.active{display:block}
+/* CONTAINER */
+.container{
+  max-width:420px;
+  margin:0 auto;
+  padding:16px;
+}
 
 /* CARD */
 .card{
-  background:white;
+  background:rgba(255,255,255,0.9);
   border-radius:20px;
   padding:16px;
-  margin-bottom:16px;
+  margin-bottom:14px;
+  box-shadow:0 6px 16px rgba(0,0,0,0.05);
 }
 
-/* INPUT */
-input,select,button{
+/* INPUTS */
+input,select{
   width:100%;
   padding:14px;
   margin:6px 0;
   border-radius:14px;
   border:none;
+  background:#fff;
 }
 
 /* BUTTON */
+button{
+  width:100%;
+  padding:14px;
+  border-radius:14px;
+  border:none;
+}
+
 .primary{
   background:#ff6b9a;
   color:white;
 }
 
-/* ROW */
-.row{display:flex;gap:8px}
-.row button{flex:1}
+/* TOGGLES */
+.row{
+  display:flex;
+  gap:8px;
+}
 
-/* BADGE */
+.row button{
+  flex:1;
+  background:#ffe4ec;
+}
+
+.active{
+  background:#ff8fb1 !important;
+  color:white;
+}
+
+/* STATUS */
 .badge{
   padding:10px 16px;
   border-radius:999px;
+  display:inline-block;
 }
 
 .safe{background:#d4f8e8}
 .warn{background:#ffd6dc}
 .mid{background:#fff3cd}
 
-/* NAV */
-.nav{
-  position:fixed;
-  bottom:0;
-  left:0;
-  right:0;
+/* ENTRY */
+.entry{
+  padding:10px 0;
+  border-bottom:1px solid #eee;
+}
+
+.top{
   display:flex;
-  background:white;
-  border-top:1px solid #eee;
-}
-.nav button{flex:1}
-
-/* CALENDAR */
-.calendar{
-  display:grid;
-  grid-template-columns:repeat(7,1fr);
-  gap:6px;
+  justify-content:space-between;
 }
 
-.day{
-  padding:10px;
-  border-radius:10px;
-  text-align:center;
+.actions button{
+  width:auto;
+  padding:6px 10px;
+  margin-left:4px;
 }
 
-.fertile{background:#ffd6dc}
-.safeDay{background:#d4f8e8}
-.midDay{background:#fff3cd}
-
-canvas{width:100%!important}
+canvas{
+  width:100%!important;
+}
 </style>
 </head>
 
 <body>
 
-<!-- HOME -->
-<div class="page active" id="home">
+<div class="container">
 
+<!-- STATUS -->
 <div class="card">
-<h2 id="cycleDay"></h2>
+<h3 id="cycleDay"></h3>
 <div id="status"></div>
 <p id="explain"></p>
 </div>
 
+<!-- INPUT -->
 <div class="card">
+
 <input type="date" id="date">
 <input type="number" id="temp" placeholder="Temperatur">
 
@@ -113,98 +130,128 @@ canvas{width:100%!important}
 </select>
 
 <div class="row">
-<button onclick="toggle('peak')">⭐</button>
-<button onclick="toggle('period')">🩸</button>
-<button onclick="toggle('dist')">⚠️</button>
+<button id="peakBtn">⭐</button>
+<button id="periodBtn">🩸</button>
+<button id="distBtn">⚠️</button>
 </div>
 
-<button class="primary" onclick="saveEntry()">Speichern</button>
-</div>
+<button class="primary" id="saveBtn">Speichern</button>
 
 </div>
 
-<!-- ANALYSE -->
-<div class="page" id="analysis">
-<div class="card">
-<h3>Analyse</h3>
-<div id="insights"></div>
-</div>
-
+<!-- CHART -->
 <div class="card">
 <canvas id="chart"></canvas>
 </div>
-</div>
 
-<!-- CALENDAR -->
-<div class="page" id="calendar">
+<!-- LIST -->
 <div class="card">
-<h3>Monat</h3>
-<div id="calendarGrid" class="calendar"></div>
-</div>
+<div id="list"></div>
 </div>
 
-<!-- NAV -->
-<div class="nav">
-<button onclick="showPage('home')">🏠</button>
-<button onclick="showPage('analysis')">📈</button>
-<button onclick="showPage('calendar')">📅</button>
 </div>
 
 <script>
 
 // STATE
 let data = JSON.parse(localStorage.getItem("cycleData")) || [];
+let editIndex = null;
+
 let peak=false, period=false, disturbed=false;
 let chart=null;
 
-// NAV
-function showPage(id){
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-}
+// BUTTONS
+const peakBtn=document.getElementById("peakBtn");
+const periodBtn=document.getElementById("periodBtn");
+const distBtn=document.getElementById("distBtn");
 
-// TOGGLE
-function toggle(t){
-  if(t==="peak") peak=!peak;
-  if(t==="period") period=!period;
-  if(t==="dist") disturbed=!disturbed;
-}
+peakBtn.onclick=()=>{peak=!peak;peakBtn.classList.toggle("active");}
+periodBtn.onclick=()=>{period=!period;periodBtn.classList.toggle("active");}
+distBtn.onclick=()=>{disturbed=!disturbed;distBtn.classList.toggle("active");}
 
 // SAVE
-function saveEntry(){
+document.getElementById("saveBtn").onclick=()=>{
 
   let date=document.getElementById("date").value;
   let temp=parseFloat(document.getElementById("temp").value);
   let mucus=parseInt(document.getElementById("mucus").value);
 
-  if(!date || isNaN(temp)){
+  if(!date||isNaN(temp)){
     alert("Datum + Temperatur!");
     return;
   }
 
-  data.push({date,temp,mucus,peak,period,disturbed});
-  data.sort((a,b)=> new Date(a.date)-new Date(b.date));
+  let entry={date,temp,mucus,peak,period,disturbed};
+
+  if(editIndex!==null){
+    data[editIndex]=entry;
+    editIndex=null;
+  }else{
+    data.push(entry);
+  }
+
+  data.sort((a,b)=>new Date(a.date)-new Date(b.date));
 
   localStorage.setItem("cycleData",JSON.stringify(data));
 
-  peak=false; period=false; disturbed=false;
+  reset();
+  render();
+};
 
+// RESET INPUT
+function reset(){
+  document.getElementById("date").value="";
+  document.getElementById("temp").value="";
+  document.getElementById("mucus").value=0;
+
+  peak=period=disturbed=false;
+
+  peakBtn.classList.remove("active");
+  periodBtn.classList.remove("active");
+  distBtn.classList.remove("active");
+}
+
+// DELETE
+function deleteEntry(i){
+  data.splice(i,1);
+  save();
+}
+
+// EDIT
+function editEntry(i){
+  let d=data[i];
+
+  document.getElementById("date").value=d.date;
+  document.getElementById("temp").value=d.temp;
+  document.getElementById("mucus").value=d.mucus;
+
+  peak=d.peak;period=d.period;disturbed=d.disturbed;
+
+  peakBtn.classList.toggle("active",peak);
+  periodBtn.classList.toggle("active",period);
+  distBtn.classList.toggle("active",disturbed);
+
+  editIndex=i;
+}
+
+// SAVE
+function save(){
+  localStorage.setItem("cycleData",JSON.stringify(data));
   render();
 }
 
-// FIXED CYCLE LOGIC
+// CYCLE FIX
 function splitCycles(){
-  let cycles = [];
-  let current = [];
+  let cycles=[],current=[];
 
   for(let i=0;i<data.length;i++){
-    let d = data[i];
-    let prev = data[i-1];
+    let d=data[i];
+    let prev=data[i-1];
 
     if(d.period && (!prev || !prev.period)){
       if(current.length){
         cycles.push(current);
-        current = [];
+        current=[];
       }
     }
 
@@ -217,97 +264,69 @@ function splitCycles(){
 }
 
 function getCycle(){
-  let cycles = splitCycles();
-  return cycles[cycles.length-1] || [];
+  let c=splitCycles();
+  return c[c.length-1]||[];
 }
 
 // STATUS
 function getStatus(day){
-  if(day<7) return "fertile";
-  if(day<14) return "mid";
-  return "safe";
-}
-
-// HOME
-function renderHome(){
-  let c=getCycle();
-
-  document.getElementById("cycleDay").innerText="Tag "+c.length;
-
-  let s=getStatus(c.length);
-
-  let map={
-    fertile:["FRUCHTBAR","warn","Fruchtbare Phase"],
-    mid:["UNSICHER","mid","Übergangsphase"],
-    safe:["UNFRUCHTBAR","safe","Nach Hochlage"]
-  };
-
-  let m=map[s];
-
-  document.getElementById("status").innerHTML=
-    `<span class="badge ${m[1]}">${m[0]}</span>`;
-
-  document.getElementById("explain").innerText=m[2];
+  if(day<7)return["FRUCHTBAR","warn","Fruchtbare Phase"];
+  if(day<14)return["UNSICHER","mid","Übergang"];
+  return["UNFRUCHTBAR","safe","Nach Hochlage"];
 }
 
 // CHART
-function renderChart(){
-  let c=getCycle();
+function drawChart(cycle){
 
-  let temps=c.map(d=>d.disturbed?null:d.temp);
-  let labels=c.map(d=>d.date);
+  let temps=cycle.map(d=>d.disturbed?null:d.temp);
+  let labels=cycle.map(d=>d.date);
 
-  if(chart) chart.destroy();
+  if(chart)chart.destroy();
 
   chart=new Chart(document.getElementById("chart"),{
     type:'line',
-    data:{
-      labels,
-      datasets:[
-        {
-          label:"Temp",
-          data:temps,
-          tension:0.3
-        }
-      ]
-    }
+    data:{labels,datasets:[{data:temps,tension:0.3}]}
   });
-}
-
-// CALENDAR
-function renderCalendar(){
-
-  let grid=document.getElementById("calendarGrid");
-  grid.innerHTML="";
-
-  let now=new Date();
-  let days=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
-
-  for(let i=1;i<=days;i++){
-
-    let s=getStatus(i);
-
-    let cls = s==="fertile" ? "fertile"
-             : s==="mid" ? "midDay"
-             : "safeDay";
-
-    grid.innerHTML += `<div class="day ${cls}">${i}</div>`;
-  }
-}
-
-// INSIGHTS
-function renderInsights(){
-  let c=getCycle();
-  document.getElementById("insights").innerHTML=
-    `Zyklus: ${c.length} Tage<br>Einträge: ${data.length}`;
 }
 
 // RENDER
 function render(){
-  renderHome();
-  renderChart();
-  renderCalendar();
-  renderInsights();
+
+  let cycle=getCycle();
+
+  document.getElementById("cycleDay").innerText="Tag "+cycle.length;
+
+  let s=getStatus(cycle.length);
+
+  document.getElementById("status").innerHTML=
+    `<span class="badge ${s[1]}">${s[0]}</span>`;
+
+  document.getElementById("explain").innerText=s[2];
+
+  drawChart(cycle);
+
+  let html="";
+  data.forEach((d,i)=>{
+    html+=`
+    <div class="entry">
+      <div class="top">
+        <div>${d.date} | ${d.temp}°C</div>
+        <div class="actions">
+          <button onclick="editEntry(${i})">✏️</button>
+          <button onclick="deleteEntry(${i})">❌</button>
+        </div>
+      </div>
+      <div>
+        ${["trocken","cremig","spinnbar"][d.mucus]}
+        ${d.peak?"⭐":""}
+        ${d.period?"🩸":""}
+        ${d.disturbed?"⚠️":""}
+      </div>
+    </div>
+    `;
+  });
+
+  document.getElementById("list").innerHTML=html;
 }
 
 // INIT
