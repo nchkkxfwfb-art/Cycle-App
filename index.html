@@ -21,26 +21,25 @@ body{
 .container{
   max-width:420px;
   margin:0 auto;
-  padding:16px;
+  padding:18px;
 }
 
 /* CARD */
 .card{
   background:rgba(255,255,255,0.9);
   border-radius:20px;
-  padding:16px;
-  margin-bottom:14px;
-  box-shadow:0 6px 16px rgba(0,0,0,0.05);
+  padding:18px;
+  margin-bottom:18px;
+  box-shadow:0 8px 20px rgba(0,0,0,0.06);
 }
 
 /* INPUTS */
 input,select{
   width:100%;
   padding:14px;
-  margin:6px 0;
+  margin:8px 0;
   border-radius:14px;
   border:none;
-  background:#fff;
 }
 
 /* BUTTON */
@@ -54,17 +53,20 @@ button{
 .primary{
   background:#ff6b9a;
   color:white;
+  margin-top:8px;
 }
 
 /* TOGGLES */
 .row{
   display:flex;
-  gap:8px;
+  gap:10px;
+  margin-top:8px;
 }
 
 .row button{
   flex:1;
   background:#ffe4ec;
+  padding:12px;
 }
 
 .active{
@@ -77,6 +79,7 @@ button{
   padding:10px 16px;
   border-radius:999px;
   display:inline-block;
+  font-weight:600;
 }
 
 .safe{background:#d4f8e8}
@@ -85,19 +88,24 @@ button{
 
 /* ENTRY */
 .entry{
-  padding:10px 0;
+  padding:14px 0;
   border-bottom:1px solid #eee;
 }
 
 .top{
   display:flex;
   justify-content:space-between;
+  align-items:center;
+}
+
+.actions{
+  display:flex;
+  gap:6px;
 }
 
 .actions button{
   width:auto;
   padding:6px 10px;
-  margin-left:4px;
 }
 
 canvas{
@@ -198,7 +206,7 @@ document.getElementById("saveBtn").onclick=()=>{
   render();
 };
 
-// RESET INPUT
+// RESET
 function reset(){
   document.getElementById("date").value="";
   document.getElementById("temp").value="";
@@ -270,22 +278,45 @@ function getCycle(){
 
 // STATUS
 function getStatus(day){
-  if(day<7)return["FRUCHTBAR","warn","Fruchtbare Phase"];
-  if(day<14)return["UNSICHER","mid","Übergang"];
-  return["UNFRUCHTBAR","safe","Nach Hochlage"];
+  if(day<7)return["FRUCHTBAR","warn"];
+  if(day<14)return["UNSICHER","mid"];
+  return["UNFRUCHTBAR","safe"];
 }
 
-// CHART
+// CHART MIT PHASEN
 function drawChart(cycle){
 
   let temps=cycle.map(d=>d.disturbed?null:d.temp);
   let labels=cycle.map(d=>d.date);
 
+  let fertile = temps.map((v,i)=> i<12 ? v : null);
+  let infertile = temps.map((v,i)=> i>=12 ? v : null);
+
   if(chart)chart.destroy();
 
   chart=new Chart(document.getElementById("chart"),{
     type:'line',
-    data:{labels,datasets:[{data:temps,tension:0.3}]}
+    data:{
+      labels,
+      datasets:[
+        {
+          label:"Fruchtbar",
+          data:fertile,
+          borderColor:"#ff8fb1",
+          backgroundColor:"rgba(255,143,177,0.2)",
+          fill:true,
+          tension:0.3
+        },
+        {
+          label:"Unfruchtbar",
+          data:infertile,
+          borderColor:"#3cb371",
+          backgroundColor:"rgba(60,179,113,0.15)",
+          fill:true,
+          tension:0.3
+        }
+      ]
+    }
   });
 }
 
@@ -300,8 +331,6 @@ function render(){
 
   document.getElementById("status").innerHTML=
     `<span class="badge ${s[1]}">${s[0]}</span>`;
-
-  document.getElementById("explain").innerText=s[2];
 
   drawChart(cycle);
 
