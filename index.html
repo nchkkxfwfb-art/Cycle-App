@@ -270,18 +270,27 @@ function editEntry(i){
 
 // ZYKLEN
 function splitCycles(){
-  let cycles=[], current=[];
-  data.forEach(d=>{
-    if(d.period && current.length){cycles.push(current); current=[];}
-    current.push(d);
-  });
-  if(current.length) cycles.push(current);
-  return cycles;
-}
+  let cycles = [];
+  let current = [];
 
-function getCurrentCycle(){
-  let cycles = splitCycles();
-  return cycles[cycles.length-1] || [];
+  for(let i = 0; i < data.length; i++){
+    let d = data[i];
+    let prev = data[i-1];
+
+    // neuer Zyklus NUR wenn vorher KEINE Periode war
+    if(d.period && (!prev || !prev.period)){
+      if(current.length){
+        cycles.push(current);
+        current = [];
+      }
+    }
+
+    current.push(d);
+  }
+
+  if(current.length) cycles.push(current);
+
+  return cycles;
 }
 
 // LOGIK
