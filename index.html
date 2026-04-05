@@ -348,30 +348,46 @@ function render(){
 
   drawChart(cycle);
 
-  let html="";
-  data.forEach((d,i)=>{
-    html+=`
-    <div class="entry">
-      <div class="top">
-        <div>${d.date} | ${d.temp}°C</div>
-        <div class="actions">
-          <button onclick="editEntry(${i})">✏️</button>
-          <button onclick="deleteEntry(${i})">❌</button>
-        </div>
-      </div>
-      <div>
-        ${["trocken","cremig","spinnbar"][d.mucus]}
-        ${d.peak?"⭐":""}
-        ${d.period?"🩸":""}
-        ${d.disturbed?"⚠️":""}
+  let displayData = showAll ? data : getCycle();
+
+// neueste oben
+displayData = [...displayData].reverse();
+
+let html="";
+
+displayData.forEach((d)=>{
+
+  // richtigen Index im Original-Array finden
+  let realIndex = data.findIndex(x =>
+    x.date === d.date &&
+    x.temp === d.temp &&
+    x.mucus === d.mucus &&
+    x.peak === d.peak &&
+    x.period === d.period &&
+    x.disturbed === d.disturbed
+  );
+
+  html+=`
+  <div class="entry">
+    <div class="top">
+      <div>${d.date} | ${d.temp}°C</div>
+      <div class="actions">
+        <button onclick="editEntry(${realIndex})">✏️</button>
+        <button onclick="deleteEntry(${realIndex})">❌</button>
       </div>
     </div>
-    `;
-  });
+    <div>
+      ${["trocken","cremig","spinnbar"][d.mucus]}
+      ${d.peak?"⭐":""}
+      ${d.period?"🩸":""}
+      ${d.disturbed?"⚠️":""}
+    </div>
+  </div>
+  `;
+});
 
-  document.getElementById("list").innerHTML=html;
+document.getElementById("list").innerHTML=html;
 }
-
 // INIT
 render();
 
