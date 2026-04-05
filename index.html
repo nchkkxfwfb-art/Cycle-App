@@ -162,11 +162,14 @@ canvas{
 <script>
 
 // STATE
+// STATE
 let data = JSON.parse(localStorage.getItem("cycleData")) || [];
 let editIndex = null;
 
 let peak=false, period=false, disturbed=false;
 let chart=null;
+
+let showAll = false;
 
 // BUTTONS
 const peakBtn=document.getElementById("peakBtn");
