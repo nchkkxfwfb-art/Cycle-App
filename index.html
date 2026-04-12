@@ -291,10 +291,60 @@ function getCycle(){
 }
 
 // STATUS
-function getStatus(day){
-  if(day<7)return["FRUCHTBAR","warn"];
-  if(day<14)return["UNSICHER","mid"];
-  return["UNFRUCHTBAR","safe"];
+function getStatus(cycle){
+
+  let temps = cycle.map(d => d.disturbed ? null : d.temp);
+
+  let tempShiftIndex = null;
+
+  for(let i=6; i<temps.length-2; i++){
+
+    let prev6 = temps.slice(i-6,i).filter(v=>v!==null);
+    if(prev6.length < 6) continue;
+
+    let cover = Math.max(...prev6);
+
+    let t1=temps[i], t2=temps[i+1], t3=temps[i+2], t4=temps[i+3];
+
+    if(t1>cover && t2>cover && t3>cover){
+      tempShiftIndex = i+2;
+      break;
+    }
+
+    if(t1>cover && t2>cover && t3<=cover && t4>cover){
+      tempShiftIndex = i+3;
+      break;
+    }
+  }
+
+  let peakIndex = cycle.map(d=>d.peak).lastIndexOf(true);
+  let mucusSafeIndex = peakIndex !== -1 ? peakIndex + 3 : null;
+
+  let lastDay = cycle.length - 1;
+
+  // 🔴 Wenn aktuell spinnbar → IMMER fruchtbar
+  if(cycle[lastDay]?.mucus === 2){
+    return ["FRUCHTBAR","warn","Spinnbarer Schleim"];
+  }
+
+  // 🟢 Beide Regeln erfüllt
+  if(tempShiftIndex !== null && mucusSafeIndex !== null){
+    let safeIndex = Math.max(tempShiftIndex, mucusSafeIndex);
+
+    if(lastDay >= safeIndex){
+      return ["UNFRUCHTBAR","safe","Beide Regeln erfüllt"];
+    }
+  }
+
+  // 🟡 Nur Temperatur erfüllt
+  if(tempShiftIndex !== null){
+    if(lastDay >= tempShiftIndex){
+      return ["WAHRSCHEINLICH UNFRUCHTBAR","mid","Kein Peak gesetzt"];
+    }
+  }
+
+  // 🔴 Standard
+  return ["FRUCHTBAR","warn","Regeln nicht erfüllt"];
 }
 
 // CHART MIT PHASEN
