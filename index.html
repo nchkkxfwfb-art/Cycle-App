@@ -391,7 +391,7 @@ function render(){
 
   document.getElementById("cycleDay").innerText="Tag "+cycle.length;
 
-  let s=getStatus(cycle.length);
+  let s=getStatus(cycle);
 
   document.getElementById("status").innerHTML=
     `<span class="badge ${s[1]}">${s[0]}</span>`;
